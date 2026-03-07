@@ -12,6 +12,8 @@ This is a simple tiled background generator built in simple HTML, JS and CSS. In
 
 ## How to use
 
+Install dependencies with `npm install`, then start the local dev server with `npm run dev`.
+
 Simply draw your desired pattern in the grid and watch it update live on the background of the page.
 
 To save the image, set your width and height and at the top, select the desired scale. Then click Download.

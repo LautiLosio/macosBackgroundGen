@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   const inputCanvas = document.getElementById("input-canvas");
+  const backgroundCanvas = document.getElementById("background-canvas");
   const invertButton = document.getElementById("invert");
   const widthInput = document.getElementById("width");
   const heightInput = document.getElementById("height");
@@ -12,6 +13,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const leftArrow = document.getElementById("left-arrow");
   const whiteInput = document.getElementById("white-input");
   const blackInput = document.getElementById("black-input");
+
+  const selectorValueToScale = {
+    1: 1,
+    2: 2,
+    3: 4,
+    4: 8,
+    5: 16,
+    6: 32,
+    7: 64,
+  };
 
 
   // Easter egg for the close button
@@ -82,13 +93,46 @@ document.addEventListener("DOMContentLoaded", () => {
     scheduleUpdate();
   });
 
-  let isMouseDown = false;
+  let activePointerId = null;
   let drawColor = black;
   let needsUpdate = false;
+  const scaleControl = scaleSelector.closest(".scale-control");
 
-  const generateWallpaper = () => {
-    const scale = parseInt(scaleSelector.value);
+  const syncScaleThumb = () => {
+    const min = Number(scaleSelector.min);
+    const max = Number(scaleSelector.max);
+    const value = Number(scaleSelector.value);
+    const percent = ((value - min) / (max - min)) * 100;
+
+    scaleControl.style.setProperty("--scale-position", `${percent}%`);
+  };
+
+  const updateUiScale = () => {
+    const rootStyles = getComputedStyle(document.documentElement);
+    const stageWidth = parseFloat(rootStyles.getPropertyValue("--stage-width"));
+    const stageHeight = parseFloat(rootStyles.getPropertyValue("--stage-height"));
+    const fitScale = Math.min(
+      window.innerWidth / stageWidth,
+      window.innerHeight / stageHeight
+    );
+    let uiScale = fitScale;
+
+    if (fitScale >= 2) {
+      uiScale = Math.floor(fitScale);
+    } else if (fitScale > 1) {
+      uiScale = fitScale;
+    }
+
+    if (uiScale === 1) {
+      uiScale = fitScale > 1 ? fitScale : 0.99;
+    }
+
+    document.documentElement.style.setProperty("--ui-scale", uiScale);
+  };
+
+  const readPattern = () => {
     const pattern = [];
+
     for (let row of inputCanvas.rows) {
       const rowData = [];
       for (let cell of row.cells) {
@@ -97,15 +141,16 @@ document.addEventListener("DOMContentLoaded", () => {
       pattern.push(rowData);
     }
 
-    // Get the width and height of the inputs
-    const width = parseInt(widthInput.value);
-    const height = parseInt(heightInput.value);
-   
-    // Create off-screen canvas with the 8x8 pattern
+    return pattern;
+  };
+
+  const createPatternCanvas = (pattern) => {
     const patternCanvas = document.createElement("canvas");
     patternCanvas.width = 8;
     patternCanvas.height = 8;
+
     const patternCtx = patternCanvas.getContext("2d");
+    patternCtx.imageSmoothingEnabled = false;
 
     for (let y = 0; y < 8; y++) {
       for (let x = 0; x < 8; x++) {
@@ -114,36 +159,41 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // Draw an image that will be used as background for the website
-    // the image will be half the size of the viewport
-    const backgroundCanvas = document.createElement("canvas");
-    backgroundCanvas.width = window.innerWidth / scale;
-    backgroundCanvas.height = window.innerHeight / scale;
-    const backgroundCtx = backgroundCanvas.getContext("2d");
+    return patternCanvas;
+  };
 
-    for (let y = 0; y < backgroundCanvas.height; y += 8) {
-      for (let x = 0; x < backgroundCanvas.width; x += 8) {
-        backgroundCtx.drawImage(patternCanvas, x, y, 8, 8);
+  const tileCanvas = (targetCanvas, sourceCanvas, width, height) => {
+    targetCanvas.width = width;
+    targetCanvas.height = height;
+
+    const ctx = targetCanvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = white;
+    ctx.fillRect(0, 0, width, height);
+
+    for (let y = 0; y < height; y += sourceCanvas.height) {
+      for (let x = 0; x < width; x += sourceCanvas.width) {
+        ctx.drawImage(sourceCanvas, x, y, sourceCanvas.width, sourceCanvas.height);
       }
     }
+  };
 
-    // Draw the background image on the website
-    // body.style.backgroundImage = `url(${backgroundCanvas.toDataURL()})`;
+  const generateWallpaper = () => {
+    const pattern = readPattern();
+    const patternCanvas = createPatternCanvas(pattern);
+    const previewScale = selectorValueToScale[scaleSelector.value];
+    const viewportScale = window.devicePixelRatio || 1;
+    const viewportWidth = Math.max(1, Math.ceil((window.innerWidth * viewportScale) / previewScale));
+    const viewportHeight = Math.max(1, Math.ceil((window.innerHeight * viewportScale) / previewScale));
 
-    // save it as a css variable
-    document.documentElement.style.setProperty("--background-image", `url(${backgroundCanvas.toDataURL()})`);
+    // Get the width and height of the inputs
+    const width = parseInt(widthInput.value);
+    const height = parseInt(heightInput.value);
 
-    // Draw the wallpaper on the wallpaperCanvas
-    wallpaperCanvas.width = width;
-    wallpaperCanvas.height = height;
-    const ctx = wallpaperCanvas.getContext("2d");
+    tileCanvas(backgroundCanvas, patternCanvas, viewportWidth, viewportHeight);
+    tileCanvas(wallpaperCanvas, patternCanvas, width, height);
 
-    for (let y = 0; y < height; y += 8) {
-      for (let x = 0; x < width; x += 8) {
-        ctx.drawImage(patternCanvas, x, y, 8, 8);
-      }
-    }
-  }
+  };
 
   const scheduleUpdate = () => {
     if (!needsUpdate) {
@@ -163,6 +213,46 @@ document.addEventListener("DOMContentLoaded", () => {
     return varString === "var(--black)" ? black : white;
   };
 
+  const paintCell = (cell) => {
+    if (!cell || cell.tagName !== "TD") {
+      return;
+    }
+
+    if (cell.style.backgroundColor !== drawColor) {
+      cell.style.backgroundColor = drawColor;
+      scheduleUpdate();
+    }
+  };
+
+  const handleGridPointerDown = (event) => {
+    if (event.target.tagName !== "TD") {
+      return;
+    }
+
+    event.preventDefault();
+    const initialColor = varToHex(event.target.style.backgroundColor);
+    drawColor = initialColor === black ? hexToVar(white) : hexToVar(black);
+    activePointerId = event.pointerId;
+    paintCell(event.target);
+  };
+
+  const handleGridPointerMove = (event) => {
+    if (activePointerId !== event.pointerId) {
+      return;
+    }
+
+    event.preventDefault();
+    const hoveredElement = document.elementFromPoint(event.clientX, event.clientY);
+    const hoveredCell = hoveredElement ? hoveredElement.closest("#input-canvas td") : null;
+    paintCell(hoveredCell);
+  };
+
+  const stopGridPointer = (event) => {
+    if (activePointerId === event.pointerId) {
+      activePointerId = null;
+    }
+  };
+
   // Initialize 8x8 input canvas
   for (let row = 0; row < 8; row++) {
     const tr = document.createElement("tr");
@@ -172,27 +262,15 @@ document.addEventListener("DOMContentLoaded", () => {
       if ((row % 2 === 0 && col % 2 === 0) || (row % 2 === 1 && col % 2 === 1)) {
         td.style.backgroundColor = hexToVar(black);
       }
-      td.addEventListener("mousedown", (event) => {
-        const initialColor = varToHex(event.target.style.backgroundColor);
-        drawColor = initialColor === black ? hexToVar(white) : hexToVar(black);
-        td.style.backgroundColor = drawColor;
-        isMouseDown = true;
-        scheduleUpdate();
-      });
-      td.addEventListener("mouseenter", (event) => {
-        if (isMouseDown) {
-          event.target.style.backgroundColor = drawColor;
-          scheduleUpdate();
-        }
-      });
       tr.appendChild(td);
     }
     inputCanvas.appendChild(tr);
   }
 
-  document.addEventListener("mouseup", () => {
-    isMouseDown = false;
-  });
+  inputCanvas.addEventListener("pointerdown", handleGridPointerDown);
+  document.addEventListener("pointermove", handleGridPointerMove, { passive: false });
+  document.addEventListener("pointerup", stopGridPointer);
+  document.addEventListener("pointercancel", stopGridPointer);
 
   // Invert the 8x8 design
   invertButton.addEventListener("click", () => {
@@ -233,16 +311,11 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Update wallpaper when changing the scale
-  scaleSelector.addEventListener("input", scheduleUpdate);
+  scaleSelector.addEventListener("input", () => {
+    syncScaleThumb();
+    scheduleUpdate();
+  });
 
-  let selectorValueToScale = {
-    1: 1,
-    2: 2,
-    3: 4,
-    4: 8,
-    5: 10,
-  };
-  
   // When pressing the download button, download the wallpaperCavas as an image
   // with the selected scale, resampling the image with the nearest-neighbor algorithm
   downloadButton.addEventListener("click", (event) => {
@@ -379,16 +452,18 @@ document.addEventListener("DOMContentLoaded", () => {
     heightInput.select();
   });
 
-  // Update on viewport resize
+  // Keep the UI stage fitted, and rerender the live background at the new viewport resolution.
+  window.addEventListener("resize", updateUiScale);
   window.addEventListener("resize", scheduleUpdate);
 
   // Initial wallpaper generation
+  updateUiScale();
+  syncScaleThumb();
   scheduleUpdate();
 });
 
-// Set the range value when clicking on the labels
-function setRangeValue(value) {
+// Expose the range setter for the inline scale labels.
+window.setRangeValue = (value) => {
   document.getElementById("scale-selector").value = value;
   document.getElementById("scale-selector").dispatchEvent(new Event("input"));
-}
-
+};

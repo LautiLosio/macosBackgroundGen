@@ -10,102 +10,127 @@
 </head>
 
 <body>
-  <div class="flex-row gap-1 p-1 grow justify-center">
-    <div class="flex align-center">
-      <div class="flex-col shrink gap-1" id="main-container">
-        <div class="flex" id="title-bar">
-          <div id="close">
-            <svg xmlns="http://www.w3.org/2000/svg" style="opacity: 0;">
-              <rect width="1" height="2" x="2" y="2"></rect>
-              <rect width="1" height="2" x="7" y="2"></rect>
-              <rect width="1" height="5" x="5" y="2"></rect>
-              <rect width="1" height="1" x="4" y="6"></rect>
-              <rect width="1" height="1" x="2" y="7"></rect>
-              <rect width="1" height="1" x="7" y="7"></rect>
-              <rect width="4" height="1" x="3" y="8"></rect>
-            </svg>
-          </div>
-          <hr id="hr1">
-          <hr id="hr2">
-          <hr id="hr3">
-          <hr id="hr4">
-          <hr id="hr5">
-          <hr id="hr6">
-          <h1>Wallpaper Designer</h1>
-        </div>
-        <div class="flex-row gap-1 px-1" id="controls">
-          <div class="flex align-center justify-center input-box">
-            <label for="width">Width:</label>
-            <input type="number" id="width" value="128" min="8" width="4">
-          </div>
-          <div class="flex align-center justify-center input-box">
-            <label for="height">Height:</label>
-            <input type="number" id="height" value="128" min="8" size="4">
-          </div>
-        </div>
-        <div class="flex-col gap-1 p-1">
-          <div class="flex-col gap-1" id="input-canvas-container">
-            <div class="flex align-center gap-1">
-              <div id="left-arrow"></div>
-              <table id="input-canvas"></table>
-              <div id="right-arrow"></div>
+  <canvas id="background-canvas" aria-hidden="true"></canvas>
+  <div id="ui-stage">
+    <div class="flex-row gap-1 p-1 grow justify-center app-shell">
+      <div class="flex align-center">
+        <div class="flex-col shrink gap-1" id="main-container">
+          <div class="flex" id="title-bar">
+            <div id="close">
+              <svg xmlns="http://www.w3.org/2000/svg" style="opacity: 1;">
+                <rect width="1" height="2" x="1" y="1"></rect>
+                <rect width="1" height="2" x="6" y="1"></rect>
+                <rect width="1" height="5" x="4" y="1"></rect>
+                <rect width="1" height="1" x="3" y="5"></rect>
+                <rect width="1" height="1" x="1" y="6"></rect>
+                <rect width="1" height="1" x="6" y="6"></rect>
+                <rect width="4" height="1" x="2" y="7"></rect>
+              </svg>
             </div>
-            <button id="invert">Invert Design</button>
+            <hr id="hr1">
+            <hr id="hr2">
+            <hr id="hr3">
+            <hr id="hr4">
+            <hr id="hr5">
+            <hr id="hr6">
+            <h1>Wallpaper Designer</h1>
           </div>
-        </div>
-
-        <div class="grid-3 w-100 justify-center p-1">
-          <div class="flex-col grow gap-1 p-1">
-            <h2>Design</h2>
-            <div class="flex gap-1" id="design-controls">
-              <button id="save">Save</button>
-              <button id="load">Load</button>
-              <button id="clear">Clear</button>
-            </div>
-            <hr style="border: none;">
-            <div class="flex-row gap-1">
-              <div class="flex-row align-center">
-                <label for="custom-white">White</label>
-                <div class="input-container">
-                  <input type="color" name="custom-white" id="white-input" value="#fdfae7">
+          <div id="workspace">
+            <section class="ui-panel editor-panel">
+              <div class="panel-heading">Pattern</div>
+              <div class="panel-body">
+                <div class="flex-col gap-1" id="input-canvas-container">
+                  <div class="flex align-center gap-1">
+                    <div id="left-arrow"></div>
+                    <table id="input-canvas"></table>
+                    <div id="right-arrow"></div>
+                  </div>
+                  <button id="invert">Invert Design</button>
                 </div>
               </div>
-              <div class="flex-row align-center">
-                <label for="custom-black">Black</label>
-                <div class="input-container">
-                  <input type="color" name="custom-black" id="black-input" value="#100F0F">
+            </section>
+            <aside id="control-stack">
+              <section class="ui-panel">
+                <div class="panel-heading">Design</div>
+                <div class="panel-body compact">
+                  <div class="flex gap-1" id="design-controls">
+                    <button id="save">Save</button>
+                    <button id="load">Load</button>
+                    <button id="clear">Clear</button>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
-          <hr class="vertical-hr">
-          <div class="flex-col grow gap-1 p-1">
-            <h2>Scale</h2>
-            <div class="flex-row w-100 gap-1 justify-between">
-              <p onclick="setRangeValue(1)">1</p>
-              <p onclick="setRangeValue(2)">2</p>
-              <p onclick="setRangeValue(3)">4</p>
-              <p onclick="setRangeValue(4)">8</p>
-              <p onclick="setRangeValue(5)">10</p>
-            </div>
-            <input type="range" name="download-scale" id="scale-selector" min="1" max="5" value="4" step="1" class="custom-range">
-            <button id="download">Download</button>
+              </section>
+              <section class="ui-panel">
+                <div class="panel-heading">Colors</div>
+                <div class="panel-body compact">
+                  <div class="color-row">
+                    <div class="flex-row align-center">
+                      <label for="custom-white">White</label>
+                      <div class="input-container">
+                        <input type="color" name="custom-white" id="white-input" value="#fdfae7">
+                      </div>
+                    </div>
+                    <div class="flex-row align-center">
+                      <label for="custom-black">Black</label>
+                      <div class="input-container">
+                        <input type="color" name="custom-black" id="black-input" value="#100F0F">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+              <section class="ui-panel">
+                <div class="panel-heading">Scale</div>
+                <div class="panel-body compact">
+                  <div class="scale-control">
+                    <div class="scale-labels">
+                      <p onclick="setRangeValue(1)" style="--stop: 0;">1</p>
+                      <p onclick="setRangeValue(2)" style="--stop: 1;">2</p>
+                      <p onclick="setRangeValue(3)" style="--stop: 2;">4</p>
+                      <p onclick="setRangeValue(4)" style="--stop: 3;">8</p>
+                      <p onclick="setRangeValue(5)" style="--stop: 4;">16</p>
+                      <p onclick="setRangeValue(6)" style="--stop: 5;">32</p>
+                      <p onclick="setRangeValue(7)" style="--stop: 6;">64</p>
+                    </div>
+                    <div class="scale-slider-shell">
+                      <div class="scale-rail" aria-hidden="true"></div>
+                      <div class="scale-thumb" aria-hidden="true"></div>
+                      <input type="range" name="download-scale" id="scale-selector" min="1" max="7" value="4" step="1"
+                        class="custom-range">
+                    </div>
+                  </div>
+                </div>
+              </section>
+              <section class="ui-panel export-panel">
+                <div class="panel-heading">Export</div>
+                <div class="panel-body compact">
+                  <div class="flex-col gap-1 w-100" id="export-controls">
+                    <div class="flex-row gap-1 w-100" id="controls">
+                      <div class="flex align-center justify-center input-box">
+                        <label for="width">Width:</label>
+                        <input type="number" id="width" value="128" min="8" width="4">
+                      </div>
+                      <div class="flex align-center justify-center input-box">
+                        <label for="height">Height:</label>
+                        <input type="number" id="height" value="128" min="8" size="4">
+                      </div>
+                    </div>
+                    <div class="flex justify-center" id="download-control">
+                      <button id="download">Download</button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </aside>
           </div>
         </div>
       </div>
-    </div>
-    <div id="output-canvas-container" style="display: none;">
-      <canvas id="output-canvas"></canvas>
+      <div id="output-canvas-container" style="display: none;">
+        <canvas id="output-canvas"></canvas>
+      </div>
     </div>
   </div>
-  
-  </div>
-
-  
-
-
-
-  <script src="script.js"></script>
+  <script type="module" src="script.js"></script>
 </body>
 
 </html>
