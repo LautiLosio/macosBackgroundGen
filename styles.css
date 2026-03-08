@@ -319,6 +319,8 @@ label {
   padding: 0;
   box-sizing: border-box;
   --scale-position: 50%;
+  --slider-edge-inset: 2px;
+  --slider-thumb-edge-offset: 5px;
 }
 
 .scale-labels {
@@ -333,15 +335,27 @@ label {
   left: calc((var(--stop) / 6) * 100%);
   transform: translateX(-50%);
   font-size: 6px;
-  width: auto;
+  width: 2ch;
+  text-align: center;
   line-height: 1;
+}
+
+.scale-labels p:first-child {
+  left: 0;
+  transform: none;
+}
+
+.scale-labels p:last-child {
+  left: auto;
+  right: 0;
+  transform: none;
 }
 
 .scale-slider-shell {
   position: relative;
   width: 100%;
   height: 18px;
-  overflow: visible;
+  overflow: hidden;
 }
 
 #input-canvas-container {
@@ -444,8 +458,8 @@ label {
 
 .scale-rail {
   position: absolute;
-  left: 0;
-  right: 0;
+  left: var(--slider-edge-inset);
+  right: var(--slider-edge-inset);
   top: 6px;
   height: 6px;
   overflow: hidden;
@@ -464,13 +478,17 @@ label {
   mask-image: url("./slider_track_pattern.svg");
   -webkit-mask-repeat: repeat;
   mask-repeat: repeat;
-  -webkit-mask-size: 4px 4px;
-  mask-size: 4px 4px;
+  -webkit-mask-size: 2px 2px;
+  mask-size: 2px 2px;
 }
 
 .scale-thumb {
   position: absolute;
-  left: var(--scale-position);
+  left: clamp(
+    var(--slider-thumb-edge-offset),
+    var(--scale-position),
+    calc(100% - var(--slider-thumb-edge-offset))
+  );
   top: 3px;
   width: 6px;
   height: 12px;
