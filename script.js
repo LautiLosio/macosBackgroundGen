@@ -251,7 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     workspaceShell.style.height = `${startHeight}px`;
     workspaceShell.offsetHeight;
-    workspaceShell.style.transition = `height ${CONTENT_COLLAPSE_DURATION_MS}ms ease`;
+    workspaceShell.style.transition = `height ${CONTENT_COLLAPSE_DURATION_MS}ms ease-in-out`;
     workspaceShell.addEventListener("transitionend", handleWorkspaceTransitionEnd);
     workspaceShell.addEventListener("transitioncancel", handleWorkspaceTransitionEnd);
 
@@ -831,7 +831,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Keep the UI stage fitted, and rerender the live background at the new viewport resolution.
-  window.addEventListener("resize", setDefaultOutputSize);
   window.addEventListener("resize", updateUiScale);
   window.addEventListener("resize", scheduleUpdate);
 
